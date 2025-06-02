@@ -3,7 +3,7 @@
 # Зависимости
 - [unitree_ros2](https://github.com/unitreerobotics/unitree_ros2)
 - [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python)
-- pyrealsense2
+- pyrealsense2 (python3)
 - flask (python3)
 # Установка зависимостей
 ## unitree_ros2
@@ -36,8 +36,15 @@ source ~/unitree_ros2/cyclonedds_ws/install/setup.bash
 cd ~
 sudo apt install python3-pip
 git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
-cd unitree_sdk2_python
-pip3 install -e .
+```
+Далее необходимо перед установкой подправить 1 файл в данном пакете. 
+```bash
+nvim ~/unitree_sdk2_python/__init__.py
+```
+И убрать в первой строчке в конце импорт `b2` и удалить 9 строчку вовсе.
+```bash
+cd ~/unitree_sdk2_python
+pip3 install .
 ```
 ## pyrealsense2 и flask
 ```bash
