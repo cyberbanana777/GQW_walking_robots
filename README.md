@@ -64,3 +64,4 @@ colcon build
 source ~/GQW_walking_robots_ws/install/setup.bash
 ros2 launch completed_scripts Fedor_teleop_with_hands.launch.py
 ```
+Чтобы просмотреть трансляцию с камеры откройте на любом устройстве сайт по [адресу](http://192.168.123.162:5010/)
