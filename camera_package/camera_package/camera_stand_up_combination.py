@@ -126,10 +126,6 @@ def index():
                     </div>
                 </div>
                 
-                <div class="stream-container">
-                    <h2>Combined View</h2>
-                    <img src="/combined_feed" width="1280" height="480">
-                </div>
             </div>
         </body>
     </html>
@@ -149,12 +145,10 @@ def depth_feed():
         mimetype='multipart/x-mixed-replace; boundary=frame'
     )
 
-@app.route('/combined_feed')
-def combined_feed():
-    return Response(
-        generate_combined_frames(),
-        mimetype='multipart/x-mixed-replace; boundary=frame'
-    )
+
+def main():
+    app.run(host='192.168.123.162', port=5010, threaded=True)
+
 
 if __name__ == '__main__':
-    app.run(host='192.168.123.162', port=5010, threaded=True)
+    main()
