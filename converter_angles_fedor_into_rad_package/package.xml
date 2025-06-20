@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>converter_angles_fedor_into_rad_package</name>
+  <version>1.0.0</version>
+  <description>The node listens to bare_data, converts the copier joint values
+                ​from the FEDOR robot to radians via the given mappings, and 
+                publishes to Fedor_data_rad. Runs at 333.3 Hz for real time.</description>
+  <maintainer email="sashagrachev2005@gmail.com">banana-killer</maintainer>
+  <license>TODO: License declaration</license>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
