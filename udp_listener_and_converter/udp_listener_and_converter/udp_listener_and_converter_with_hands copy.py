@@ -35,14 +35,8 @@ import rclpy
 from std_msgs.msg import String
 from rclpy.node import Node
 
-
-HOST = '192.168.123.162'
-
-
-
-PORT = 34567
-DATA_PAYLOAD = 2000
-TOPIC = "positions_to_unitree"
+TOPIC_SUBSCRIBE = "bare_data"
+TOPIC_PUBLISH = "positions_to_unitree"
 FREQUENCY = 333.3  # Частота мониторинга в Герцах
 
 
@@ -195,24 +189,28 @@ class UdpListenerAndConverterNode(Node):
         self.impact = 1.0
         self.time_for_return_control = 8.0
         self.control_dt = 1 / FREQUENCY
-
-        # Create a UDP socket
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.s.bind((HOST, PORT))
-
-        # Status information
-        self.get_logger().info(f"Node is listening {HOST}:{PORT}")
+        self.received_data = ''
 
         self.create_timer(self.control_dt, self.timer_callback)
-        self.publisher = self.create_publisher(String, TOPIC, 10)
+        self.publisher = self.create_publisher(String, TOPIC_PUBLISH, 10)
+
+        self.subscription_state = self.create_subscription(
+            String,
+            TOPIC_SUBSCRIBE,
+            self.listener_callback_bare,
+            10
+        )
 
         self.msg = String()
         self.last_data = None
 
+    def listener_callback_bare(self, msg):
+        self.received_data = msg.data
+
     def timer_callback(self):
         """Обратный вызов таймера для обработки данных."""
         try:
-            data, address = self.s.recvfrom(DATA_PAYLOAD)
+            data = self.received_data
             response = json.loads(data)
             self.formated_type = response['slaves']
         except Exception as e:
