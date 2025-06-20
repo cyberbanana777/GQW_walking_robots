@@ -22,6 +22,8 @@ incoming JSON messages. The code supports configuration of the target joint
 via a ROS2 parameter.
 '''
 
+from unitree_go.msg import LowState
+from unitree_go.msg import MotorStates
 from std_msgs.msg import Float32
 from std_msgs.msg import String
 from rclpy.node import Node
@@ -70,6 +72,7 @@ class ExtractorNode(Node):
         self.time_for_return_control = 8.0
         self.control_dt = 1 / FREQUENCY
         self.joint_Fedor_angle_value = 0.0
+        self.H1_joint_angle_value = 0.0
 
         # Объявление параметра со значением по умолчанию
         self.declare_parameter('H1_joint_num', 16)
@@ -81,10 +84,17 @@ class ExtractorNode(Node):
 
         self.create_timer(self.control_dt, self.timer_callback)
 
-        # Публикация угла выбранного джоинта
-        self.publisher = self.create_publisher(
+        # Публикация угла выбранного джоинта Федор
+        self.publisher_fedor = self.create_publisher(
             Float32,
-            TOPIC_PUBLISH_GROUP + str(self.H1_joint_num_value),
+            TOPIC_PUBLISH_GROUP + str(self.H1_joint_num_value) + '/fedor',
+            10
+        )
+
+        # Публикация угла выбранного джоинта H1
+        self.publisher_H1 = self.create_publisher(
+            Float32,
+            TOPIC_PUBLISH_GROUP + str(self.H1_joint_num_value) + '/h1',
             10
         )
 
@@ -99,11 +109,32 @@ class ExtractorNode(Node):
             10
         )
 
+        # Подписка на топик, в который публикуется информацию об степени сжаия пальцев H1
+        self.subscription_state = self.create_subscription(
+            MotorStates,
+            'inspire/state',
+            self.listener_callback_states,
+            10
+        )
+
+        # подписка на топик, в который публикуется информация о углах поворота звеньев H1
+        self.subscription_LowCmd = self.create_subscription(
+            LowState,
+            'lowstate',
+            self.listener_callback_LowCmd,
+            10
+        )
+
     def timer_callback(self):
         """Публикация угла выбранного джоинта в радианах"""
         msg_float = Float32()
         msg_float.data = float(self.joint_Fedor_angle_value)
-        self.publisher.publish(msg_float)
+        self.publisher_fedor.publish(msg_float)
+
+        msg_float = Float32()
+        msg_float.data = float(self.H1_joint_angle_value)
+        self.publisher_H1.publish(msg_float)
+
         # self.get_logger().info(f'Tracking joint: {self.H1_joint_num_value}')
 
     def listener_Fedor_data_rad(self, msg):
@@ -111,15 +142,40 @@ class ExtractorNode(Node):
         data = json.loads(msg.data)
         joint_fedor = TRANSLATER_FOR_JOINTS_UNITREE_H1_TO_FEDOR[self.H1_joint_num_value]
 
-        # data_to_send = data['slaves'][joint_fedor]['target']
-        # self.get_logger().info(f'{data_to_send}')
+        data_to_send = data['slaves'][joint_fedor]['target']
+        self.get_logger().info(f'{data_to_send}')
 
-        if str(joint_fedor) not in data:
-            self.get_logger().warn(
-                f"Joint {joint_fedor} not found in incoming data")
+        # if str(joint_fedor) not in data:
+        #     self.get_logger().warn(
+        #         f"Joint {joint_fedor} not found in incoming data")
+        #     return
+
+        # self.joint_Fedor_angle_value = data[str(joint_fedor)]
+        # self.get_logger().debug(f'{self.joint_Fedor_angle_value}')
+
+    def listener_callback_LowCmd(self, msg):
+        """Получение угла выбранного джоинта H1"""
+        if self.H1_joint_num_value < 20:
+            try:
+                self.H1_joint_angle_value = msg.motor_state[self.H1_joint_num_value].q
+                self.get_logger().info(f'{self.H1_joint_angle_value}')
+            except Exception as e:
+                self.get_logger().warn(
+                    f"Joint {self.H1_joint_num_value} not found in incoming data")
+        else:
             return
 
-        self.joint_Fedor_angle_value = data[str(joint_fedor)]
+    def listener_callback_states(self, msg):
+        """Получение угла выбранного джоинта кисти H1"""
+        if self.H1_joint_num_value >= 20:
+            try:
+                self.H1_joint_angle_value = msg.states[self.H1_joint_num_value - 20].q
+                self.get_logger().info(f'{self.H1_joint_angle_value}')
+            except Exception as e:
+                self.get_logger().warn(
+                    f"Joint {self.H1_joint_num_value} not found in incoming data")
+        else:
+            return
 
 
 def main(args=None):

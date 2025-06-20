@@ -4,14 +4,18 @@ package_name = 'completed_scripts'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='1.0.0',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name, ['launch/Fedor_teleop_with_hands.launch.py']),
-        ('share/' + package_name, ['launch/Fedor_teleop_without_hands.launch.py']),
+        ('share/' + package_name,
+         ['launch/Fedor_teleop_with_hands_launch.py']),
+        ('share/' + package_name,
+         ['launch/Fedor_teleop_without_hands_launch.py']),
+        ('share/' + package_name,
+         ['launch/Fedor_teleop_with_hands_and_metrics_launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

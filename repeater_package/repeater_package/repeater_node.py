@@ -1,4 +1,4 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 
 '''
 АННОТАЦИЯ
@@ -18,13 +18,13 @@ logs the received data, and ensures safe shutdown, including closing the socket
 and freeing up ROS2 resources.
 '''
 
+from rclpy.node import Node
+from std_msgs.msg import String
+import rclpy
 import socket
 import json
-import rclpy
-from std_msgs.msg import String
-from rclpy.node import Node
 
-HOST = '192.168.211.129'
+HOST = '192.168.123.18'
 PORT = 34567
 DATA_PAYLOAD = 2000
 TOPIC = "Fedor_bare_data"
@@ -45,7 +45,8 @@ class UDPRepeaterNode(Node):
 
         # Status information
         self.get_logger().info(f"Repeater node is listening {HOST}:{PORT}")
-        self.get_logger().info(f"Repeater node publishing in '/{TOPIC}' ROS2-topic")
+        self.get_logger().info(
+            f"Repeater node publishing in '/{TOPIC}' ROS2-topic")
 
         self.create_timer(self.control_dt, self.timer_callback)
         self.publisher = self.create_publisher(String, TOPIC, 10)
@@ -53,19 +54,18 @@ class UDPRepeaterNode(Node):
         self.msg = String()
         self.last_data = None
 
-
     def timer_callback(self):
         """Обратный вызов таймера для обработки данных."""
         try:
             data, address = self.s.recvfrom(DATA_PAYLOAD)
-            
+
         except Exception as e:
             self.get_logger().error(f"Error processing data: {e}")
             return
 
         response = json.loads(data)
         self.last_data = json.dumps(response)
-        self.msg.data = self.last_data 
+        self.msg.data = self.last_data
         self.get_logger().debug(f'data = {(self.last_data)}')
         self.publisher.publish(self.msg)
 
