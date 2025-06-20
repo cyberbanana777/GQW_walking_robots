@@ -14,7 +14,7 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='banana-killer',
-    maintainer_email='sashagrachev@gmail.com',
+    maintainer_email='sashagrachev2005@gmail.com',
     description='This ROS2 node (UDPRepeaterNode) accepts JSON data via a UDP\
         socket and publishes it to the topic "Fedor_bare_data" at a frequency\
         of 333.3 Hz.',

@@ -2,24 +2,26 @@
 
 '''
 АННОТАЦИЯ
-Этот код представляет собой ROS2-ноду для преобразования и публикации данных 
-о суставах робота. Нода подписывается на топик с данными углов суставов 
-копирующего устройства (Fedor), преобразует их в соответствующие суставы 
-робота Unitree H1 и публикует выбранный сустав в топик для визуализации 
-в PlotJuggler. Основная логика включает таймер для периодической публикации 
-и обработку входящих JSON-сообщений. Код поддерживает настройку целевого 
-сустава через параметр ROS2.
+Данный код реализует ROS2-ноду для синхронизации и мониторинга суставов робота
+Unitree H1 с копирующим устройством Fedor. Нода подписывается на три типа 
+сообщений: сырые данные с Fedor в формате JSON, состояния моторов и 
+низкоуровневые показатели H1. Основная функция - сопоставление и публикация 
+углов выбранного сустава в отдельные топики для визуализации в PlotJuggler. 
+Реализована поддержка как основных суставов (плечи, локти), так и суставов 
+кисти. Номер отслеживаемого сустава настраивается через параметр H1_joint_num. 
+Работает на высокой частоте 333.3 Гц для точного сравнения показаний.
 '''
 
 '''
 ANNOTATION
-This code is a ROS2 node for converting and publishing robot joint data. 
-The node subscribes to a topic containing joint angle data from the Fedor 
-master device, converts them to corresponding joints of the Unitree H1 robot, 
-and publishes the selected joint to a topic for visualization in PlotJuggler. 
-The core logic includes a timer for periodic publishing and processing of 
-incoming JSON messages. The code supports configuration of the target joint 
-via a ROS2 parameter.
+This code implements a ROS2 node for synchronization and monitoring of Unitree
+H1 robot joints with Fedor master device. The node subscribes to three message
+types: raw JSON data from Fedor, motor states and low-level H1 metrics. Core
+functionality includes matching and publishing selected joint angles to 
+separate topics for PlotJuggler visualization. Supports both main joints 
+(shoulders, elbows) and hand joints. Target joint can be configured via 
+H1_joint_num parameter. Operates at high frequency of 333.3 Hz for precise 
+measurements comparison.
 '''
 
 from unitree_go.msg import LowState

@@ -15,9 +15,10 @@ setup(
     zip_safe=True,
     maintainer='banana-killer',
     maintainer_email='sashagrachev2005@gmail.com',
-    description='This ROS2 node converts joint data from Fedor format to\
-        Unitree H1, publishing the selected joint to PlotJuggler on a timer,\
-        with the target joint configured via a ROS2 parameter.',
+    description='ROS2 node for monitoring and comparing joint angles between \
+        Fedor device and Unitree H1 robot. Subscribes to Fedor data(JSON) \
+        and H1 motor states, publishes selected joint values for PlotJuggler\
+        visualization. Supports joint selection via H1_joint_num parameter.',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={

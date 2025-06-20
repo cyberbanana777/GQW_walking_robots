@@ -3,14 +3,17 @@
 <package format="3">
   <name>extractor_package</name>
   <version>1.0.0</version>
-  <description>This ROS2 node converts joint data from Fedor format to Unitree
-               H1, publishing the selected joint to PlotJuggler on a timer,
-               with the target joint configured via a ROS2 parameter.</description>
+  <description>ROS2 node for monitoring and comparing joint angles between 
+              Fedor device and Unitree H1 robot. Subscribes to Fedor data 
+              (JSON) and H1 motor states, publishes selected joint values for 
+              PlotJuggler visualization. Supports joint selection via 
+              H1_joint_num parameter.</description>
   <maintainer email="sashagrachev@gmail.com">banana-killer</maintainer>
   <license>TODO: License declaration</license>
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
+  <depend>unitree_go</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
