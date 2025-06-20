@@ -1,41 +1,48 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 
 '''
 АННОТАЦИЯ
-Скрипт создаёт ROS2-ноду "udp_listener_and_converter" для того, чтобы 
-принимать данные с unity-программы от Фёдора по udp-сокету, 
-преобразовывать их в формат для unitree_h1 и отправлять в топик 
-"positions_to_unitree". Передаётся информация от всех сочленений.
+Данный код представляет собой ROS2-ноду (ConverterNode), которая преобразует
+данные о положении суставов из формата от копирующего устройства от робота
+Fedor в формат, совместимый с роботом Unitree H1. Нода подписывается на топик
+Fedor_bare_data, получает JSON-данные, конвертирует углы суставов с учетом 
+ограничений каждого сочленения и публикует результат в топик 
+positions_to_unitree с частотой 333.3 Гц. Особенностью является плавное 
+снижение коэффициента влияния (impact) при завершении работы, что обеспечивает
+безопасный переход робота в нейтральное положение.
 
-Преобразование происходит по следующему принципу:
-    1. Происходит сопоставление joints между unitree_h1 и Фёдором.
-    2. На основе предельных значений с unity-программы и предельных
-    значений unitree_h1, происходит преобразование из ситемы координат
-    unity-программы в систему координат unitree_h1
+Код включает словари TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 и 
+LIMITS_OF_JOINTS_* для сопоставления суставов и их допустимых диапазонов, 
+а также функцию map_range для линейного преобразования значений между системами
+координат. Обработка ошибок и логирование данных реализованы через стандартные
+механизмы ROS2.
 '''
 
 '''
 ANNOTATION
-The script creates a ROS2 node "udp_listener_and_converter" in order to
-receive data from unity-program from Fedor via a udp socket,
-convert them into the format for unitree_h1 and send them to the topic
-"positions_to_unitree". Send information from all joints.
+This code is a ROS2 node (ConverterNode) that converts
+the joint position data from the Fedor robot copier format to a format
+compatible with the Unitree H1 robot. The node subscribes to the 
+Fedor_bare_data topic, receives JSON data, converts the joint angles taking
+into account the limits of each joint, and publishes the result to the
+positions_to_unitree topic at a frequency of 333.3 Hz. A special feature is a 
+smooth decrease in the impact coefficient at the end of the work, which ensures
+a safe transition of the robot to the neutral position.
 
-The transformation occurs according to the following principle:
-    1. The joints between unitree_h1 and Fedor are compared.
-    2. Based on the limit values ​​from the unity program and the limit
-    values ​​of unitree_h1, a transformation occurs from the coordinate
-    system of the unity program to the coordinate system of unitree_h1
+The code includes the TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 and
+LIMITS_OF_JOINTS_* dictionaries for mapping joints and their allowable ranges,
+as well as the map_range function for linearly converting values ​​between 
+coordinate systems. Error handling and data logging are implemented through 
+standard ROS2 mechanisms.
 '''
 
-import socket
+from rclpy.node import Node
+from std_msgs.msg import String
+import rclpy
 import json
 import numpy as np
-import rclpy
-from std_msgs.msg import String
-from rclpy.node import Node
 
-TOPIC_SUBSCRIBE = "bare_data"
+TOPIC_SUBSCRIBE = "Fedor_bare_data"
 TOPIC_PUBLISH = "positions_to_unitree"
 FREQUENCY = 333.3  # Частота мониторинга в Герцах
 
@@ -66,7 +73,7 @@ TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 = {
     22: 22,  # R.Finger.Middle
     23: 21,  # R.Finger.Ring
     24: 25,  # R.Finger.Thumbs
-    25: 24   # R.Finger.Thumb 
+    25: 24   # R.Finger.Thumb
 }
 
 LIMITS_OF_JOINTS_UNITREE_H1 = {
@@ -166,7 +173,8 @@ def convert_to_unitree_h1(data: list) -> dict:
                 a_fedor = limits_of_this_joint_from_fedor[0]
                 b_febor = limits_of_this_joint_from_fedor[1]
                 output_target = map_range(
-                    np.clip(input_target, min(a_fedor, b_febor), max(a_fedor, b_febor)),
+                    np.clip(input_target, min(a_fedor, b_febor),
+                            max(a_fedor, b_febor)),
                     limits_of_this_joint_from_fedor[0],
                     limits_of_this_joint_from_fedor[1],
                     limits_of_this_joint_from_unitree_h1[0],
@@ -175,16 +183,15 @@ def convert_to_unitree_h1(data: list) -> dict:
                 output_target = input_target
 
             output_targets[index_in_unitree_h1] = round(output_target, 2)
-            
 
     return output_targets
 
 
-class UdpListenerAndConverterNode(Node):
-    """ROS2 нода для прослушивания UDP и конвертации данных."""
+class ConverterNode(Node):
+    """ROS2 нода для прослушивания данных с повторителя и конвертации данных."""
 
     def __init__(self):
-        super().__init__("udp_listener_and_converter")
+        super().__init__("converter_from_fedor_to_h1_node")
 
         self.impact = 1.0
         self.time_for_return_control = 8.0
@@ -219,12 +226,12 @@ class UdpListenerAndConverterNode(Node):
 
         # Convert the data to the format of unitree_h1
         convert_data = convert_to_unitree_h1(self.formated_type)
-        # convert_data[28] = convert_data[27]
+        convert_data[28] = convert_data[27]
 
         self.last_data = json.dumps(convert_data)
         self.msg.data = self.last_data + '$' + str(self.impact)
-        self.get_logger().info(f'Impact = {round(self.impact, 3)}')
-        self.get_logger().info(f'data = {(self.last_data)}')
+        self.get_logger().debug(f'Impact = {round(self.impact, 3)}')
+        self.get_logger().debug(f'data = {(self.last_data)}')
         self.publisher.publish(self.msg)
 
     def return_control(self):
@@ -243,7 +250,7 @@ class UdpListenerAndConverterNode(Node):
 def main(args=None):
     """Основная функция для запуска ноды."""
     rclpy.init(args=args)
-    node = UdpListenerAndConverterNode()
+    node = ConverterNode()
 
     try:
         rclpy.spin(node)
@@ -256,8 +263,6 @@ def main(args=None):
 
     finally:
         node.return_control()
-        node.s.close()
-        node.get_logger().info('Socket closed.')
         node.get_logger().info('Node stoped.')
         node.destroy_node()
         rclpy.shutdown()

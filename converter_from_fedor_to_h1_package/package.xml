@@ -1,11 +1,15 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>udp_listener_and_converter</name>
+  <name>converter_from_fedor_to_h1_package</name>
   <version>1.0.0</version>
-  <description>The package includes a script that allows you to listen 
-              to a udp socket, convert coordinates from the Fedor robot
-               to Unitree_H1</description>
+  <description>This ROS2 node converts joint position data from Fedor format to
+              Unitree H1 format by subscribing to the Fedor_bare_data topic, 
+              transforming angles with respect to each joint's constraints, and 
+              publishing the result to positions_to_unitree at 333.3 Hz, 
+              including a smooth falloff on shutdown. The code includes dictionaries
+              for mapping joints to their ranges, as well as error handling and 
+              logging via ROS2.</description>
   <maintainer email="sashagrachev2005@gmail.com">banana-killer</maintainer>
   <license>TODO: License declaration</license>
 

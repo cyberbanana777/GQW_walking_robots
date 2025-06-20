@@ -24,7 +24,7 @@ import rclpy
 from std_msgs.msg import String
 from rclpy.node import Node
 
-HOST = '192.168.123.162'
+HOST = '192.168.211.129'
 PORT = 34567
 DATA_PAYLOAD = 2000
 TOPIC = "Fedor_bare_data"
