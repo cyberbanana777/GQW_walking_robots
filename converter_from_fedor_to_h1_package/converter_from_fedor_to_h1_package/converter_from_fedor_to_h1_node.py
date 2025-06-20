@@ -216,12 +216,13 @@ class ConverterNode(Node):
 
     def timer_callback(self):
         """Обратный вызов таймера для обработки данных."""
+
         try:
             data = self.received_data
             response = json.loads(data)
             self.formated_type = response['slaves']
         except Exception as e:
-            self.get_logger().error(f"Error processing data: {e}")
+            self.get_logger().warn(f"Error processing data: {e}")
             return
 
         # Convert the data to the format of unitree_h1
