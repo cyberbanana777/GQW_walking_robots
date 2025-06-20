@@ -2,7 +2,6 @@
 
 '''
 АННОТАЦИЯ
-
 Этот код представляет собой ROS2-ноду для преобразования и публикации данных 
 о суставах робота. Нода подписывается на топик с данными углов суставов 
 копирующего устройства (Fedor), преобразует их в соответствующие суставы 
@@ -14,7 +13,6 @@
 
 '''
 ANNOTATION
-
 This code is a ROS2 node for converting and publishing robot joint data. 
 The node subscribes to a topic containing joint angle data from the Fedor 
 master device, converts them to corresponding joints of the Unitree H1 robot, 
@@ -112,15 +110,16 @@ class ExtractorNode(Node):
         """Получение угла выбранного джоинта в радианах"""
         data = json.loads(msg.data)
         joint_fedor = TRANSLATER_FOR_JOINTS_UNITREE_H1_TO_FEDOR[self.H1_joint_num_value]
-        data_to_send = data['slaves'][joint_fedor]['target']
-        self.get_logger().info(f'{data_to_send}')
 
-        # if str(joint_fedor) not in data:
-        #     self.get_logger().warn(
-        #         f"Joint {joint_fedor} not found in incoming data")
-        #     return
+        # data_to_send = data['slaves'][joint_fedor]['target']
+        # self.get_logger().info(f'{data_to_send}')
 
-        # self.joint_Fedor_angle_value = data[str(joint_fedor)]
+        if str(joint_fedor) not in data:
+            self.get_logger().warn(
+                f"Joint {joint_fedor} not found in incoming data")
+            return
+
+        self.joint_Fedor_angle_value = data[str(joint_fedor)]
 
 
 def main(args=None):

@@ -2,8 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>extractor_package</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>1.0.0</version>
+  <description>This ROS2 node converts joint data from Fedor format to Unitree
+               H1, publishing the selected joint to PlotJuggler on a timer,
+               with the target joint configured via a ROS2 parameter.</description>
   <maintainer email="sashagrachev@gmail.com">banana-killer</maintainer>
   <license>TODO: License declaration</license>
 
