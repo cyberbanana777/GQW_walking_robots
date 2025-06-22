@@ -39,7 +39,7 @@ git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
 ```
 Далее необходимо перед установкой подправить 1 файл в данном пакете. 
 ```bash
-nvim ~/unitree_sdk2_python/__init__.py
+nvim ~/unitree_sdk2_python/unitree_sdk2py/__init__.py
 ```
 И убрать в первой строчке в конце импорт `b2` и удалить 9 строчку вовсе.
 ```bash
@@ -48,7 +48,7 @@ pip3 install .
 ```
 ## pyrealsense2 и flask
 ```bash
-pip install flask pyrealsense2
+pip3 install flask pyrealsense2
 ```
 # Установка
 ```bash
