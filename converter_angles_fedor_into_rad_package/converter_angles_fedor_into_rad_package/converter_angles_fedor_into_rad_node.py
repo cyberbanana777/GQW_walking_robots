@@ -23,10 +23,11 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+import math
 
 
 TOPIC_PUBLISH = "Fedor_data_rad"
-TOPIC_SUBSCRIBE = "bare_data"
+TOPIC_SUBSCRIBE = "Fedor_bare_data"
 FREQUENCY = 333.3  # Частота мониторинга в Герцах
 
 
@@ -59,112 +60,100 @@ TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 = {
     25: 24   # R.Finger.Thumb
 }
 
-LIMITS_OF_JOINTS_FEDOR_RAD_ANGLES = {
-    0: [-0.43, 0.43],  # right_hip_roll_joint M
-    1: [-3.14, 2.53],  # right_hip_pitch_joint M
-    2: [-0.26, 2.05],  # right_knee_joint L
-    3: [-0.43, 0.43],  # left_hip_roll_joint M
-    4: [-3.14, 2.53],  # left_hip_pitch_joint M
-    5: [0.26, 2.05],  # left_knee_joint L
-    6: [-2.35, 2.35],  # torso_joint M
-    7: [-0.43, 0.43],  # left_hip_yaw_joint M
-    8: [-0.43, 0.43],  # right_hip_yaw_joint M
-    9: [None, None],  # NOT USED
-    10: [-0.87, 0.52],  # left_ankle_joint S
-    11: [-0.87, 0.52],  # right_ankle_joint S
-    12: [-1.9, 0.5],  # right_shoulder_pitch_joint M
-    13: [-2.2, 0.0],  # right_shoulder_roll_joint M
-    14: [-1.5, 1.3],  # right_shoulder_yaw_joint M
-    15: [-0.5, 1.65],  # right_elbow_joint M
-    16: [-1.9, 0.5],  # left_shoulder_pitch_joint M
-    17: [0.0, 2.2],  # left_shoulder_roll_joint M
-    18: [-1.3, 1.5],  # left_shoulder_yaw_joint M
-    19: [-0.5, 1.65],  # left_elbow_joint M
-    20: [0.0, 1.0],  # right_pinky
-    21: [0.0, 1.0],  # right_ring
-    22: [0.0, 1.0],  # right_middle
-    23: [0.0, 1.0],  # right_index
-    24: [0.0, 1.0],  # right_thumb-bend
-    25: [0.0, 1.0],  # right_thumb-rotation
-    26: [0.0, 1.0],  # left_pinky
-    27: [0.0, 1.0],  # left_ring
-    28: [0.0, 1.0],  # left_middle
-    29: [0.0, 1.0],  # left_index
-    30: [0.0, 1.0],  # left_thumb-bend
-    31: [0.0, 1.0]  # left_thumb-rotation
+# LIMITS_OF_JOINTS_FEDOR_RAD_ANGLES = {
+#     0: [-0.43, 0.43],  # right_hip_roll_joint M
+#     1: [-3.14, 2.53],  # right_hip_pitch_joint M
+#     2: [-0.26, 2.05],  # right_knee_joint L
+#     3: [-0.43, 0.43],  # left_hip_roll_joint M
+#     4: [-3.14, 2.53],  # left_hip_pitch_joint M
+#     5: [0.26, 2.05],  # left_knee_joint L
+#     6: [-2.35, 2.35],  # torso_joint M
+#     7: [-0.43, 0.43],  # left_hip_yaw_joint M
+#     8: [-0.43, 0.43],  # right_hip_yaw_joint M
+#     9: [None, None],  # NOT USED
+#     10: [-0.87, 0.52],  # left_ankle_joint S
+#     11: [-0.87, 0.52],  # right_ankle_joint S
+#     12: [-1.9, 0.5],  # right_shoulder_pitch_joint M
+#     13: [-2.2, 0.0],  # right_shoulder_roll_joint M
+#     14: [-1.5, 1.3],  # right_shoulder_yaw_joint M
+#     15: [-0.5, 1.65],  # right_elbow_joint M
+#     16: [-1.9, 0.5],  # left_shoulder_pitch_joint M
+#     17: [0.0, 2.2],  # left_shoulder_roll_joint M
+#     18: [-1.3, 1.5],  # left_shoulder_yaw_joint M
+#     19: [-0.5, 1.65],  # left_elbow_joint M
+#     20: [0.0, 1.0],  # right_pinky
+#     21: [0.0, 1.0],  # right_ring
+#     22: [0.0, 1.0],  # right_middle
+#     23: [0.0, 1.0],  # right_index
+#     24: [0.0, 1.0],  # right_thumb-bend
+#     25: [0.0, 1.0],  # right_thumb-rotation
+#     26: [0.0, 1.0],  # left_pinky
+#     27: [0.0, 1.0],  # left_ring
+#     28: [0.0, 1.0],  # left_middle
+#     29: [0.0, 1.0],  # left_index
+#     30: [0.0, 1.0],  # left_thumb-bend
+#     31: [0.0, 1.0]  # left_thumb-rotation
+# }
+
+KOEFFICIENT_OF_JOINTS_FEDOR = {
+    # Руки (не пальцы) → pi/18
+    0: math.pi / 18,  # L_ShoulderF
+    1: math.pi / 18,  # L_ShoulderS
+    2: math.pi / 18,  # L_ElbowR
+    3: math.pi / 18,  # L_Elbow
+    4: math.pi / 18,  # L_WristR
+    5: math.pi / 18,  # L_WristS
+    6: math.pi / 18,  # L_WristF
+    13: math.pi / 18,  # R_ShoulderF
+    14: math.pi / 18,  # R_ShoulderS
+    15: math.pi / 18,  # R_ElbowR
+    16: math.pi / 18,  # R_Elbow
+    17: math.pi / 18,  # R_WristR
+    18: math.pi / 18,  # R_WristS
+    19: math.pi / 18,  # R_WristF
+
+    # Пальцы → 11 или -11 (в зависимости от знака интервала)
+    7: 1/-11,  # L_Finger_Index (интервал [-11, 0] → отрицательный)
+    8: 1/-11,  # L_Finger_Little
+    9: 1/-11,  # L_Finger_Middle
+    10: 1/-11,  # L_Finger_Ring
+    # L_Finger_ThumbS (интервал [-3, 9] → есть положительные значения)
+    11: 1/12,
+    12: 1/11,  # L_Finger_Thumb
+    20: 1/11,  # R_Finger_Index (интервал [0, 11] → положительный)
+    21: 1/11,  # R_Finger_Little
+    22: 1/11,  # R_Finger_Middle
+    23: 1/11,  # R_Finger_Ring
+    # R_Finger_ThumbS (интервал [-9, 3] → есть отрицательные значения)
+    24: 1/12,
+    25: -1/11,  # R_Finger_Thumb (интервал [0, 11] → положительный)
 }
-
-LIMITS_OF_JOINTS_FEDOR = {
-    0: [-12.0, 4.0],  # L_ShoulderF        [4.0, -12] + назад совпадают
-    1: [0.0, 12.0],  # L_ShoulderS    [0, 12] + вверх от тела совпадают
-    2: [-9.0, 9.0],  # L_ElbowR        [-9.0, 9.0] + против часовой совпадают
-    3: [-12.0, 0, 0],  # L_Elbow                 [0, -12] + вниз совпадают
-    4: [-3.820199, 6.866401],  # L_WristR
-    6: [-2.501599, 3.0],  # L_WristF
-    7: [-11.0, -1.5],  # L_Finger_Index       [0, -11] -согнут +разогнут
-    9: [-11.0, -1.5],  # L_Finger_Middle      [0, -11]
-    8: [-11.0, -1.5],  # L_Finger_Little      [0, -11]
-    10: [-11.0, -1.5],   # L_Finger_Ring       [0, -11]
-    11: [-3.0, 9.0],  # L_Finger_ThumbS     [-3, 9] -сжать, +разжать поворот
-    12: [11.0, 1.5],  # L_inger_Thumb       [0, 11] сгибание
-    13: [-12.0, 4.0],  # R_ShoulderF      [4.0, -12] + назад совпадают
-    14: [-12.0, 0.0],  # R_ShoulderS        [0, -12] + вниз к телу совпадают
-    15: [-9.0, 9.0],  # R_ElbowR            [-9.0, 9.0] + против часовой совпадают
-    16: [-12.0, 0.0],  # R_Elbow            [0, -12]    + вниз совпадают
-    17: [-11.0, 11.0],  # R_WristR
-    18: [-2.0, 7.0],  # R_WristS
-    19: [-1.734846, 3.000598],  # R_WristF
-    20: [11.0, 1.5],   # R_Finger_Index      [0, 11] +согнут 0 разогнут
-    21: [11.0, 1.5],   # R_Finger_Little     [0, 11] [0.595, 11]
-    22: [11.0, 1.5],   # R_Finger_Middle     [0, 11] [0.0749, 11]
-    23: [11.0, 1.5],   # R_Finger_Ring       [0, 11]
-    24: [3.0, -9.0],  # R_Finger_ThumbS     [-9, 3] [-9, 1.173] +сжать -разжать
-    25: [-11.0, -1.5],  # R_Finger_Thumb       [0, 11] [-0.034, 11]
-}
-
-
-def map_range(value: float,
-              in_min: float,
-              in_max: float,
-              out_min: float,
-              out_max: float
-              ) -> float:
-    """Преобразует значение из одного диапазона в другой."""
-    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
 def convert_to_unitree_h1(data: list) -> dict:
-    """Конвертирует данные из условных единиц Федора в радианы."""
+    """Конвертирует данные из условных единиц Федора в радианы, 
+       учитывая коэффициенты преобразования."""
     output_targets = {}
 
-    for i in range(0, len(data)):
+    for i in range(len(data)):
         input_target = data[i]['target']
         index_in_fedor = i
         index_in_unitree_h1 = TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1[i]
 
         if index_in_unitree_h1 is not None:
-            limits_of_this_joint_from_fedor = [
-                LIMITS_OF_JOINTS_FEDOR[index_in_fedor][0],
-                LIMITS_OF_JOINTS_FEDOR[index_in_fedor][1]]
-            limits_of_this_joint_from_unitree_h1 = [
-                index_in_fedor[index_in_unitree_h1][0],
-                index_in_fedor[index_in_unitree_h1][1]]
-            if (
-                (limits_of_this_joint_from_fedor[0] is not None)
-                and
-                    (limits_of_this_joint_from_fedor[1] is not None)):
-                a_fedor = limits_of_this_joint_from_fedor[0]
-                b_febor = limits_of_this_joint_from_fedor[1]
-                output_target = map_range(
-                    np.clip(input_target, min(a_fedor, b_febor),
-                            max(a_fedor, b_febor)),
-                    limits_of_this_joint_from_fedor[0],
-                    limits_of_this_joint_from_fedor[1],
-                    limits_of_this_joint_from_unitree_h1[0],
-                    limits_of_this_joint_from_unitree_h1[1])
-            else:
-                output_target = input_target
+            # Получаем коэффициент преобразования для текущего сустава
+            coefficient = KOEFFICIENT_OF_JOINTS_FEDOR[index_in_fedor]
 
+            # Применяем коэффициент к входному значению
+            output_target = input_target * coefficient
+
+            if index_in_fedor in (11, 24):
+                output_target += 3/12
+
+            if index_in_fedor == 20:
+                output_target = 1 - output_target
+
+            # Округляем до 2 знаков после запятой
             output_targets[index_in_fedor] = round(output_target, 2)
 
     return output_targets
@@ -213,10 +202,10 @@ class ConverterNode(Node):
 
         # Convert the data to the format of unitree_h1
         convert_data = convert_to_unitree_h1(formated_type)
-        convert_data[28] = convert_data[27]
+        # convert_data[28] = convert_data[27]
 
         self.msg.data = json.dumps(convert_data)
-        self.get_logger().debug(f'data = {(self.last_data)}')
+        self.get_logger().debug(f'data = {(self.msg.data)}')
         self.publisher.publish(self.msg)
 
 

@@ -282,14 +282,14 @@ class LowLevelControlNode(Node):
         for i in self.active_joints_hands:
             cmd_sub_msg = MotorCmd()
             self.cmd_msg_hands.cmds.append(cmd_sub_msg)
-        self.get_logger().info(f'cmd_msg_hands = {str(self.cmd_msg_hands)}')
+        #self.get_logger().info(f'cmd_msg_hands = {str(self.cmd_msg_hands)}')
 
         # create feedback_message
         self.feedback_msg = MotorStates()
         for i in self.active_joints_hands:
             feedback_sub_msg = MotorState()
             self.feedback_msg.states.append(feedback_sub_msg)
-        self.get_logger().info(f'feedback_msg = {str(self.feedback_msg)}')
+        #self.get_logger().info(f'feedback_msg = {str(self.feedback_msg)}')
 
         self.control_dt = 1 / FREQUENCY
         # (MAX_JOINT_VELOCITY * self.control_dt)/10
@@ -381,8 +381,8 @@ class LowLevelControlNode(Node):
 
         try:
             pose = json.loads(data)
-            self.get_logger().info(f'data = {pose}')
-            self.get_logger().info(f'impact = {impact}')
+            #self.get_logger().info(f'data = {pose}')
+            #self.get_logger().info(f'impact = {impact}')
 
             H1_pose = {}
             hands_pose = {}
@@ -406,7 +406,7 @@ class LowLevelControlNode(Node):
                     )
 
             for i in self.active_joints_hands:
-                self.get_logger().info(f'hands_pose = {hands_pose}')
+                #self.get_logger().info(f'hands_pose = {hands_pose}')
                 self.target_pos_hands[i] = np.clip(
                     hands_pose[i],  
                     LIMITS_OF_JOINTS_UNITREE_HANDS[i][0],
@@ -446,8 +446,8 @@ class LowLevelControlNode(Node):
 
         if self.timer_call_count <= 10 or self.impact == 0.0:
             self.current_jpos_des_H1 = self.current_jpos_H1.copy()
-            self.get_logger().info(
-                f'Обновление current_jpos_des_H1 = {self.current_jpos_des_H1}')
+            #self.get_logger().info(
+             #   f'Обновление current_jpos_des_H1 = {self.current_jpos_des_H1}')
             self.current_jpos_des_hands = self.current_jpos_hands.copy()
             self.get_logger().info(
                 f'Обновление current_jpos_des_hands = {self.current_jpos_des_hands}')
@@ -493,7 +493,7 @@ class LowLevelControlNode(Node):
                 )
                 clamped_delta_hands = round(clamped_delta_hands, 3)
                 self.current_jpos_des_hands[i] += clamped_delta_hands
-            self.get_logger().info(f'{self.current_jpos_des_hands}')
+            #self.get_logger().info(f'{self.current_jpos_des_hands}')
 
             for i in self.active_joints_hands:
                 self.cmd_msg_hands.cmds[i].q = self.current_jpos_des_hands[i]
@@ -530,7 +530,7 @@ class LowLevelControlNode(Node):
             )
             clamped_delta_hands = round(clamped_delta_hands, 3)
             self.current_jpos_des_hands[i] += clamped_delta_hands
-            self.get_logger().info(f'current_jpos_des_hands = {str(self.current_jpos_des_hands)}')
+            #self.get_logger().info(f'current_jpos_des_hands = {str(self.current_jpos_des_hands)}')
 
             for i in self.active_joints_hands:
                 self.cmd_msg_hands.cmds[i].q = 1.0

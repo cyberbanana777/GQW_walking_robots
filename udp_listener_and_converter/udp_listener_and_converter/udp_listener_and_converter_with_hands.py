@@ -2,48 +2,47 @@
 
 '''
 АННОТАЦИЯ
-Данный код представляет собой ROS2-ноду (ConverterNode), которая преобразует
-данные о положении суставов из формата от копирующего устройства от робота
-Fedor в формат, совместимый с роботом Unitree H1. Нода подписывается на топик
-Fedor_bare_data, получает JSON-данные, конвертирует углы суставов с учетом
-ограничений каждого сочленения и публикует результат в топик
-positions_to_unitree с частотой 333.3 Гц. Особенностью является плавное
-снижение коэффициента влияния (impact) при завершении работы, что обеспечивает
-безопасный переход робота в нейтральное положение.
+Скрипт создаёт ROS2-ноду "udp_listener_and_converter" для того, чтобы 
+принимать данные с unity-программы от Фёдора по udp-сокету, 
+преобразовывать их в формат для unitree_h1 и отправлять в топик 
+"positions_to_unitree". Передаётся информация от всех сочленений.
 
-Код включает словари TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 и
-LIMITS_OF_JOINTS_* для сопоставления суставов и их допустимых диапазонов,
-а также функцию map_range для линейного преобразования значений между системами
-координат. Обработка ошибок и логирование данных реализованы через стандартные
-механизмы ROS2.
+Преобразование происходит по следующему принципу:
+    1. Происходит сопоставление joints между unitree_h1 и Фёдором.
+    2. На основе предельных значений с unity-программы и предельных
+    значений unitree_h1, происходит преобразование из ситемы координат
+    unity-программы в систему координат unitree_h1
 '''
 
 '''
 ANNOTATION
-This code is a ROS2 node (ConverterNode) that converts
-the joint position data from the Fedor robot copier format to a format
-compatible with the Unitree H1 robot. The node subscribes to the
-Fedor_bare_data topic, receives JSON data, converts the joint angles taking
-into account the limits of each joint, and publishes the result to the
-positions_to_unitree topic at a frequency of 333.3 Hz. A special feature is a
-smooth decrease in the impact coefficient at the end of the work, which ensures
-a safe transition of the robot to the neutral position.
+The script creates a ROS2 node "udp_listener_and_converter" in order to
+receive data from unity-program from Fedor via a udp socket,
+convert them into the format for unitree_h1 and send them to the topic
+"positions_to_unitree". Send information from all joints.
 
-The code includes the TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 and
-LIMITS_OF_JOINTS_* dictionaries for mapping joints and their allowable ranges,
-as well as the map_range function for linearly converting values ​​between
-coordinate systems. Error handling and data logging are implemented through
-standard ROS2 mechanisms.
+The transformation occurs according to the following principle:
+    1. The joints between unitree_h1 and Fedor are compared.
+    2. Based on the limit values ​​from the unity program and the limit
+    values ​​of unitree_h1, a transformation occurs from the coordinate
+    system of the unity program to the coordinate system of unitree_h1
 '''
 
+import socket
+import json
+import numpy as np
+import rclpy
 from std_msgs.msg import String
 from rclpy.node import Node
-import rclpy
-import numpy as np
-import json
 
-TOPIC_SUBSCRIBE = "Fedor_bare_data"
-TOPIC_PUBLISH = "positions_to_unitree"
+
+HOST = '192.168.123.162'
+
+
+
+PORT = 34567
+DATA_PAYLOAD = 2000
+TOPIC = "positions_to_unitree"
 FREQUENCY = 333.3  # Частота мониторинга в Герцах
 
 
@@ -73,7 +72,7 @@ TRANSLATER_FOR_JOINTS_FROM_FEDOR_TO_UNITREE_H1 = {
     22: 22,  # R.Finger.Middle
     23: 21,  # R.Finger.Ring
     24: 25,  # R.Finger.Thumbs
-    25: 24   # R.Finger.Thumb
+    25: 24   # R.Finger.Thumb 
 }
 
 LIMITS_OF_JOINTS_UNITREE_H1 = {
@@ -111,33 +110,36 @@ LIMITS_OF_JOINTS_UNITREE_H1 = {
     31: [0.0, 1.0]  # left_thumb-rotation
 }
 
+LIMITS_OF_JOINTS_UNITREE_HANDS = {
+
+}
+
 LIMITS_OF_JOINTS_FEDOR = {
     0: [-12.0, 4.0],  # L_ShoulderF        [4.0, -12] + назад совпадают
     1: [0.0, 12.0],  # L_ShoulderS    [0, 12] + вверх от тела совпадают
     2: [-9.0, 9.0],  # L_ElbowR        [-9.0, 9.0] + против часовой совпадают
-    3: [-12.0, 0.0],  # L_Elbow                 [0, -12] + вниз совпадают
-    4: [-11.0, 11.0],  # L_WristR
-    5: [-2.0, 7.0],  # L_WristS
-    6: [-2.5, 3.0],  # L_WristF
-    7: [-11.0, 0.0],  # L_Finger_Index       [0, -11] -согнут +разогнут
-    9: [-11.0, 0.0],  # L_Finger_Middle      [0, -11]
-    8: [-11.0, 0.0],  # L_Finger_Little      [0, -11]
-    10: [-11.0, 0.0],   # L_Finger_Ring       [0, -11]
+    3: [-12.0, 0, 0],  # L_Elbow                 [0, -12] + вниз совпадают
+    4: [-3.820199, 6.866401],  # L_WristR
+    6: [-2.501599, 3.0],  # L_WristF
+    7: [-11.0, -1.5],  # L_Finger_Index       [0, -11] -согнут +разогнут
+    9: [-11.0, -1.5],  # L_Finger_Middle      [0, -11]
+    8: [-11.0, -1.5],  # L_Finger_Little      [0, -11]
+    10: [-11.0, -1.5],   # L_Finger_Ring       [0, -11]
     11: [-3.0, 9.0],  # L_Finger_ThumbS     [-3, 9] -сжать, +разжать поворот
-    12: [11.0, 0.0],  # L_inger_Thumb       [0, 11] сгибание
+    12: [11.0, 1.5],  # L_inger_Thumb       [0, 11] сгибание
     13: [-12.0, 4.0],  # R_ShoulderF      [4.0, -12] + назад совпадают
     14: [-12.0, 0.0],  # R_ShoulderS        [0, -12] + вниз к телу совпадают
     15: [-9.0, 9.0],  # R_ElbowR            [-9.0, 9.0] + против часовой совпадают
     16: [-12.0, 0.0],  # R_Elbow            [0, -12]    + вниз совпадают
     17: [-11.0, 11.0],  # R_WristR
     18: [-2.0, 7.0],  # R_WristS
-    19: [-2.5, 3.0],  # R_WristF
-    20: [11.0, 0.0],   # R_Finger_Index      [0, 11] +согнут 0 разогнут
-    21: [11.0, 0.0],   # R_Finger_Little     [0, 11] [0.595, 11]
-    22: [11.0, 0.0],   # R_Finger_Middle     [0, 11] [0.0749, 11]
-    23: [11.0, 0.0],   # R_Finger_Ring       [0, 11]
+    19: [-1.734846, 3.000598],  # R_WristF
+    20: [11.0, 1.5],   # R_Finger_Index      [0, 11] +согнут 0 разогнут
+    21: [11.0, 1.5],   # R_Finger_Little     [0, 11] [0.595, 11]
+    22: [11.0, 1.5],   # R_Finger_Middle     [0, 11] [0.0749, 11]
+    23: [11.0, 1.5],   # R_Finger_Ring       [0, 11]
     24: [3.0, -9.0],  # R_Finger_ThumbS     [-9, 3] [-9, 1.173] +сжать -разжать
-    25: [-11.0, 0.0],  # R_Finger_Thumb       [0, 11] [-0.034, 11]
+    25: [-11.0, -1.5],  # R_Finger_Thumb       [0, 11] [-0.034, 11]
 }
 
 
@@ -174,8 +176,7 @@ def convert_to_unitree_h1(data: list) -> dict:
                 a_fedor = limits_of_this_joint_from_fedor[0]
                 b_febor = limits_of_this_joint_from_fedor[1]
                 output_target = map_range(
-                    np.clip(input_target, min(a_fedor, b_febor),
-                            max(a_fedor, b_febor)),
+                    np.clip(input_target, min(a_fedor, b_febor), max(a_fedor, b_febor)),
                     limits_of_this_joint_from_fedor[0],
                     limits_of_this_joint_from_fedor[1],
                     limits_of_this_joint_from_unitree_h1[0],
@@ -184,56 +185,52 @@ def convert_to_unitree_h1(data: list) -> dict:
                 output_target = input_target
 
             output_targets[index_in_unitree_h1] = round(output_target, 2)
+            
 
     return output_targets
 
 
-class ConverterNode(Node):
-    """ROS2 нода для прослушивания данных с повторителя и конвертации данных."""
+class UdpListenerAndConverterNode(Node):
+    """ROS2 нода для прослушивания UDP и конвертации данных."""
 
     def __init__(self):
-        super().__init__("converter_from_fedor_to_h1_node")
+        super().__init__("udp_listener_and_converter")
 
         self.impact = 1.0
         self.time_for_return_control = 8.0
         self.control_dt = 1 / FREQUENCY
-        self.received_data = ''
+
+        # Create a UDP socket
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.s.bind((HOST, PORT))
+
+        # Status information
+        self.get_logger().info(f"Node is listening {HOST}:{PORT}")
 
         self.create_timer(self.control_dt, self.timer_callback)
-        self.publisher = self.create_publisher(String, TOPIC_PUBLISH, 10)
-
-        self.subscription_state = self.create_subscription(
-            String,
-            TOPIC_SUBSCRIBE,
-            self.listener_callback_bare,
-            10
-        )
+        self.publisher = self.create_publisher(String, TOPIC, 10)
 
         self.msg = String()
         self.last_data = None
 
-    def listener_callback_bare(self, msg):
-        self.received_data = msg.data
-
     def timer_callback(self):
         """Обратный вызов таймера для обработки данных."""
-
         try:
-            data = self.received_data
+            data, address = self.s.recvfrom(DATA_PAYLOAD)
             response = json.loads(data)
             self.formated_type = response['slaves']
         except Exception as e:
-            self.get_logger().warn(f"Error processing data: {e}")
+            self.get_logger().error(f"Error processing data: {e}")
             return
 
         # Convert the data to the format of unitree_h1
         convert_data = convert_to_unitree_h1(self.formated_type)
-        convert_data[28] = convert_data[27]
+        # convert_data[28] = convert_data[27]
 
         self.last_data = json.dumps(convert_data)
         self.msg.data = self.last_data + '$' + str(self.impact)
-        self.get_logger().debug(f'Impact = {round(self.impact, 3)}')
-        self.get_logger().debug(f'data = {(self.last_data)}')
+        self.get_logger().info(f'Impact = {round(self.impact, 3)}')
+        self.get_logger().info(f'data = {(self.last_data)}')
         self.publisher.publish(self.msg)
 
     def return_control(self):
@@ -252,7 +249,7 @@ class ConverterNode(Node):
 def main(args=None):
     """Основная функция для запуска ноды."""
     rclpy.init(args=args)
-    node = ConverterNode()
+    node = UdpListenerAndConverterNode()
 
     try:
         rclpy.spin(node)
@@ -265,6 +262,8 @@ def main(args=None):
 
     finally:
         node.return_control()
+        node.s.close()
+        node.get_logger().info('Socket closed.')
         node.get_logger().info('Node stoped.')
         node.destroy_node()
         rclpy.shutdown()

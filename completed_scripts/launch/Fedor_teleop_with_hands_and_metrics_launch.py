@@ -1,7 +1,7 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-JOINTS_TO_CHECK = [12, 13, 14, 15, 23, 24]
+JOINTS_TO_CHECK = [12, 13, 14, 15, 23, 31]
 
 
 def generate_launch_description():
@@ -35,16 +35,16 @@ def generate_launch_description():
             for joint in JOINTS_TO_CHECK
         ],
 
-        # Node(
-        #     package="low_level_control",
-        #     executable="low_level_control_with_hands"
-        # ),
-        # Node(
-        #     package="hands_init",
-        #     executable="hands_init"
-        # ),
-        # Node(
-        #     package="camera_package",
-        #     executable="camera_stand_up_combination"
-        # ),
+        Node(
+            package="low_level_control",
+            executable="low_level_control_with_hands"
+        ),
+        Node(
+            package="hands_init",
+            executable="hands_init"
+        ),
+        Node(
+            package="camera_package",
+            executable="camera_stand_up_combination"
+        ),
     ])

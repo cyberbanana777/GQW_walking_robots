@@ -34,7 +34,7 @@ import json
 
 
 TOPIC_PUBLISH_GROUP = "plotjuggler/joint_"
-TOPIC_SUBSCRIBE = "Fedor_bare_data"
+TOPIC_SUBSCRIBE = "Fedor_data_rad"
 FREQUENCY = 333.3  # Частота мониторинга в Герцах
 
 TRANSLATER_FOR_JOINTS_UNITREE_H1_TO_FEDOR = {
@@ -144,23 +144,23 @@ class ExtractorNode(Node):
         data = json.loads(msg.data)
         joint_fedor = TRANSLATER_FOR_JOINTS_UNITREE_H1_TO_FEDOR[self.H1_joint_num_value]
 
-        data_to_send = data['slaves'][joint_fedor]['target']
-        self.get_logger().info(f'{data_to_send}')
+        # data_to_send = data['slaves'][joint_fedor]['target']
+        # self.get_logger().info(f'{data_to_send}')
 
-        # if str(joint_fedor) not in data:
-        #     self.get_logger().warn(
-        #         f"Joint {joint_fedor} not found in incoming data")
-        #     return
+        if str(joint_fedor) not in data:
+            self.get_logger().warn(
+                f"Joint {joint_fedor} not found in incoming data")
+            return
 
-        # self.joint_Fedor_angle_value = data[str(joint_fedor)]
-        # self.get_logger().debug(f'{self.joint_Fedor_angle_value}')
+        self.joint_Fedor_angle_value = data[str(joint_fedor)]
+        self.get_logger().debug(f'{self.joint_Fedor_angle_value}')
 
     def listener_callback_LowCmd(self, msg):
         """Получение угла выбранного джоинта H1"""
         if self.H1_joint_num_value < 20:
             try:
                 self.H1_joint_angle_value = msg.motor_state[self.H1_joint_num_value].q
-                self.get_logger().info(f'{self.H1_joint_angle_value}')
+                self.get_logger().debug(f'{self.H1_joint_angle_value}')
             except Exception as e:
                 self.get_logger().warn(
                     f"Joint {self.H1_joint_num_value} not found in incoming data")
@@ -172,7 +172,7 @@ class ExtractorNode(Node):
         if self.H1_joint_num_value >= 20:
             try:
                 self.H1_joint_angle_value = msg.states[self.H1_joint_num_value - 20].q
-                self.get_logger().info(f'{self.H1_joint_angle_value}')
+                self.get_logger().debug(f'{self.H1_joint_angle_value}')
             except Exception as e:
                 self.get_logger().warn(
                     f"Joint {self.H1_joint_num_value} not found in incoming data")

@@ -24,7 +24,7 @@ import rclpy
 import socket
 import json
 
-HOST = '192.168.123.18'
+HOST = '192.168.123.162'
 PORT = 34567
 DATA_PAYLOAD = 2000
 TOPIC = "Fedor_bare_data"
